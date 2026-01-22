@@ -34,8 +34,12 @@ public class EventConsumer {
             // 핵심 비즈니스 로직(재고 차감 + 포인트 결정 + 저장) 호출
             eventResultService.processWinning(eventId, memberId);
 
+        } catch (NumberFormatException e) {
+            log.error("### 메시지 형식 오류(재시도 제외): {}, message: {}", e.getMessage(), message);
         } catch (Exception e) {
-            log.error("### 메시지 처리 중 오류 발생: {}, message: {}", e.getMessage(), message);
+            log.error("### 메시지 처리 중 시스템 오류 발생(재시도): {}, message: {}", e.getMessage(), message);
+            // 예외를 다시 던져야 Spring Kafka가 에러를 감지하고 재시도(Retry) 또는 DLQ 처리를 수행합니다.
+            throw e;
         }
     }
 
@@ -55,8 +59,11 @@ public class EventConsumer {
 
             // 추첨 응모 저장 로직 호출
             eventResultService.processRaffleEntry(eventId, memberId);
+        } catch (NumberFormatException e) {
+            log.error("### Raffle 메시지 형식 오류(재시도 제외): {}", e.getMessage());
         } catch (Exception e) {
-            log.error("### Raffle 처리 중 오류: {}", e.getMessage());
+            log.error("### Raffle 처리 중 시스템 오류(재시도): {}", e.getMessage());
+            throw e;
         }
     }
 }
